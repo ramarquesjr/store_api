@@ -12,7 +12,10 @@ router = APIRouter(tags=["products"])
 async def post(
     body: ProductIn = Body(...), usecase: ProductUsecase = Depends()
 ) -> ProductOut:
-    return await usecase.create(body=body)
+    try:
+        return await usecase.create(body=body)
+    except BaseException as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message)
 
 
 @router.get(path="/{id}", status_code=status.HTTP_200_OK)
@@ -30,13 +33,22 @@ async def query(usecase: ProductUsecase = Depends()) -> list[ProductOut]:
     return await usecase.query()
 
 
+@router.get(path="/filtered_price/", status_code=status.HTTP_200_OK)
+async def query_filtered(usecase: ProductUsecase = Depends()) -> list[ProductOut]:
+    filter = {"price": {"$gt": 5000, "$lt": 8000}}
+    return await usecase.query_specific(filter)
+
+
 @router.patch(path="/{id}", status_code=status.HTTP_200_OK)
 async def patch(
     id: UUID4 = Path(alias="id"),
     body: ProductUpdate = Body(...),
     usecase: ProductUsecase = Depends(),
 ) -> ProductUpdateOut:
-    return await usecase.update(id=id, body=body)
+    try:
+        return await usecase.update(id=id, body=body)
+    except BaseException as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message)
 
 
 @router.delete(path="/{id}", status_code=status.HTTP_204_NO_CONTENT)
